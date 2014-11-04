@@ -12,4 +12,4 @@ RUN npm install
 
 EXPOSE 80
  
-CMD ["coffee", "app.coffee"]
+CMD ["node_modules/.bin/coffee", "app.coffee"]
