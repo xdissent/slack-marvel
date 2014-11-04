@@ -1,4 +1,10 @@
 
+fs = require 'fs'
+path = require 'path'
+http = require 'http'
+jade = require 'jade'
+sass = require 'node-sass'
+coffee = require 'coffee-script'
 request = require 'request'
 Promise = require 'bluebird'
 debug = require('debug') 'slack-marvel'
@@ -17,6 +23,7 @@ class App
     @channel = process.env.SLACK_MARVEL_CHANNEL ? '#general'
     @username = process.env.SLACK_MARVEL_USERNAME ? 'Marvel'
     @socket = new MarvelSocket
+    @port = parseInt(process.env.SLACK_MARVEL_PORT ? 80, 10)
 
   project: -> @_project ?= new Promise (resolve, reject) =>
     url = "https://marvelapp.com/api/prototype/#{@vanity}/?xf="
@@ -44,7 +51,7 @@ class App
       editUrl = "https://marvelapp.com/manage/project/#{project.id}/"
       links =
         updated: "<#{@url}?screens=#{imageIds}|View Updated Screens>"
-        all: "<#{@url}?project=#{@vanity}|View All Screens>"
+        all: "<#{@url}|View All Screens>"
         prototype: "<#{project.vanity_url}|View Prototype>"
         edit: "<#{editUrl}|Edit Prototype>"
       data =
@@ -78,18 +85,85 @@ class App
     return unless image?.status is 5
     debug 'Notifying', image
     @notify [image]
-  
+
+  html: ->
+    @_html ?= @project().then (project) ->
+      new Promise (resolve, reject) ->
+        src = path.resolve __dirname, 'assets/app.jade'
+        fs.readFile src, encoding: 'utf8', (err, data) ->
+          return reject err if err?
+          try
+            html = jade.compile(data, filename: src)(project: project)
+          catch err
+            return reject err
+          resolve html
+
+  scripts: ->
+    @_scripts ?= new Promise (resolve, reject) ->
+      src = path.resolve __dirname, 'assets/app.coffee'
+      fs.readFile src, encoding: 'utf8', (err, data) ->
+        return reject err if err?
+        try
+          scripts = coffee.compile data
+        catch err
+          return reject err
+        resolve scripts
+
+  styles: ->
+    @_styles ?= new Promise (resolve, reject) ->
+      src = path.resolve __dirname, 'assets/app.sass'
+      sass.render file: src, success: resolve, error: reject
+
+  _handle: (req, res) =>
+    if req.url is '/favicon.ico'
+      res.writeHead 200, 'Content-Type': 'image/x-icon'
+      return res.end()
+
+    if req.url is '/app.js'
+      debug 'Getting Scripts'
+      return @scripts().then (scripts) ->
+        debug 'Serving Scripts'
+        res.writeHead 200, 'Content-Type': 'application/javascript'
+        res.end scripts
+      .catch (err) ->
+        res.writeHead 500, 'Content-Type': 'text/plain'
+        res.end err?.message ? 'Unknown error'
+
+    if req.url is '/app.css'
+      debug 'Getting Styles'
+      return @styles().then (styles) ->
+        debug 'Serving Styles'
+        res.writeHead 200, 'Content-Type': 'text/css'
+        res.end styles
+      .catch (err) ->
+        res.writeHead 500, 'Content-Type': 'text/plain'
+        res.end err?.message ? 'Unknown error'
+
+    debug 'Getting Styles'
+    @html().then (html) ->
+      debug 'Serving html'
+      res.writeHead 200, 'Content-Type': 'text/html'
+      res.end html
+    .catch (err) ->
+      res.writeHead 500, 'Content-Type': 'text/plain'
+      res.end err?.message ? 'Unknown error'
+
+  server: ->
+    @_server ?= Promise.resolve http.createServer(@_handle).listen @port
+
   run: ->
-    debug 'Getting Project', @vanity
-    @project().then (project) =>
-      debug 'Socketing'
-      @socket.socket().then (socket) =>
-        socket.on 'message', @listener project
-        debug 'Listening'
-        @subscriber().then (subscriber) ->
-          debug 'Subscribing'
-          subscriber.subscribe().then ->
-            debug 'Subscribed'
+    debug 'Starting server'
+    @server().then =>
+      debug 'Getting Project', @vanity
+      @project().then (project) =>
+        debug 'Socketing'
+        @socket.socket().then (socket) =>
+          socket.on 'message', @listener project
+          debug 'Listening'
+          @subscriber().then (subscriber) ->
+            debug 'Subscribing'
+            subscriber.subscribe().then ->
+              debug 'Subscribed'
 
 
 app = new App

@@ -1,0 +1,52 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="utf-8")
+    meta(http-equiv="X-UA-Compatible" content="IE=edge")
+    meta(name="viewport" content="width=device-width, initial-scale=1")
+    title #{project.name} - Slack Marvel
+    link(href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css", rel="stylesheet")
+    link(href="app.css", rel="stylesheet")
+
+  body
+    nav.navbar.navbar-default.navbar-fixed-top(role="navigation")
+      .container
+        .navbar-header
+          button.navbar-toggle.collapsed(type="button" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar")
+            span.sr-only Toggle navigation
+            span.icon-bar
+            span.icon-bar
+            span.icon-bar
+          a.navbar-brand(href="#{project.vanity_url}") #{project.name}
+        #navbar.collapse.navbar-collapse
+          ul.nav.navbar-nav
+            li
+              a(href="#{project.vanity_url}") View Prototype
+            li
+              a(href="https://marvelapp.com/manage/project/#{project.id}/") Edit Prototype
+          ul.nav.navbar-nav.navbar-right.show-all
+            li
+              a(href="#") Show All
+
+    .container
+
+      - for (var idx = 1; idx <= project.num_images; idx++)
+        - var image = project.images[idx.toString()]
+
+        .panel.panel-default.prototype-screen(data-prototype-screen-id="#{image.id}")
+          .panel-heading
+            h2.panel-title.text-right
+              small #{image.directory}
+              |  #{image.name}
+          .panel-body
+            a(href="#{image.url}" target="_blank")
+              img(src="#{image.preview_thumbnail}")
+          .panel-footer.text-muted ##{image.id}
+
+    .footer
+      .container
+        p.text-muted Powered by Slack Marvel
+
+    script(src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js")
+    script(src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js")
+    script(src="app.js")
