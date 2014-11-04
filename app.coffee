@@ -103,7 +103,8 @@ class App
     @queue image
 
   html: ->
-    @_html ?= new Promise (resolve, reject) ->
+    return @_html if @_html? and !process.env.DEBUG?
+    @_html = new Promise (resolve, reject) ->
       src = path.resolve __dirname, 'assets/app.jade'
       fs.readFile src, encoding: 'utf8', (err, data) ->
         return reject err if err?
@@ -114,7 +115,8 @@ class App
         resolve html
 
   scripts: ->
-    @_scripts ?= new Promise (resolve, reject) ->
+    return @_scripts if @_scripts? and !process.env.DEBUG?
+    @_scripts = new Promise (resolve, reject) =>
       src = path.resolve __dirname, 'assets/app.coffee'
       fs.readFile src, encoding: 'utf8', (err, data) ->
         return reject err if err?
@@ -125,7 +127,8 @@ class App
         resolve scripts
 
   styles: ->
-    @_styles ?= new Promise (resolve, reject) ->
+    return @_styles if @_styles? and !process.env.DEBUG?
+    @_styles = new Promise (resolve, reject) ->
       src = path.resolve __dirname, 'assets/app.sass'
       sass.render file: src, success: resolve, error: reject
 
