@@ -22,8 +22,10 @@ class App
     @url = process.env.SLACK_MARVEL_URL ? 'http://example.com'
     @channel = process.env.SLACK_MARVEL_CHANNEL ? '#general'
     @username = process.env.SLACK_MARVEL_USERNAME ? 'Marvel'
+    @batch = parseInt(process.env.SLACK_MARVEL_BATCH ? 120000)
     @socket = new MarvelSocket
     @port = parseInt(process.env.SLACK_MARVEL_PORT ? 80, 10)
+    @_queued = {}
 
   project: -> @_project ?= new Promise (resolve, reject) =>
     url = "https://marvelapp.com/api/prototype/#{@vanity}/?xf="
@@ -45,7 +47,8 @@ class App
   notify: (images) ->
     @project().then (project) =>
       link = "*<#{project.vanity_url}|#{project.name}>*"
-      text = "#{link} updated #{images.length} screens:\n"
+      plural = "screen#{if images.length > 1 then 's' else ''}"
+      text = "#{link} updated #{images.length} #{plural}:\n"
       text += ("<#{img.url}|#{img.name}>" for img in images).join '\n'
       imageIds = (img.id for img in images).join ','
       editUrl = "https://marvelapp.com/manage/project/#{project.id}/"
@@ -72,6 +75,19 @@ class App
           debug 'Posted', err, body
           resolve()
 
+  queue: (image) ->
+    clearTimeout @_timer if @_timer?
+    @_queued[image.id] = image
+    @_timer = setTimeout =>
+      @_timer = null
+      images = (v for _, v of @_queued)
+      @_queued = {}
+      debug 'Notifying', images
+      @notify(images).then =>
+        debug 'Clearing cached project'
+        @_project = null
+    , @batch
+
   listener: (project) -> (msg) =>
     try
       msg = JSON.parse msg
@@ -83,10 +99,8 @@ class App
     catch err
     image = data?.content?.object
     return unless image?.status is 5
-    debug 'Notifying', image
-    @notify([image]).then =>
-      debug 'Clearing cached project'
-      @_project = null
+    debug 'Queueing', image
+    @queue image
 
   html: ->
     @_html ?= new Promise (resolve, reject) ->
