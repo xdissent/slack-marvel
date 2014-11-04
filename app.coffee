@@ -89,16 +89,15 @@ class App
       @_project = null
 
   html: ->
-    @_html ?= @project().then (project) ->
-      new Promise (resolve, reject) ->
-        src = path.resolve __dirname, 'assets/app.jade'
-        fs.readFile src, encoding: 'utf8', (err, data) ->
-          return reject err if err?
-          try
-            html = jade.compile(data, filename: src)(project: project)
-          catch err
-            return reject err
-          resolve html
+    @_html ?= new Promise (resolve, reject) ->
+      src = path.resolve __dirname, 'assets/app.jade'
+      fs.readFile src, encoding: 'utf8', (err, data) ->
+        return reject err if err?
+        try
+          html = jade.compile data, filename: src
+        catch err
+          return reject err
+        resolve html
 
   scripts: ->
     @_scripts ?= new Promise (resolve, reject) ->
@@ -142,13 +141,14 @@ class App
         res.end err?.message ? 'Unknown error'
 
     debug 'Getting Styles'
-    @html().then (html) ->
-      debug 'Serving html'
-      res.writeHead 200, 'Content-Type': 'text/html'
-      res.end html
-    .catch (err) ->
-      res.writeHead 500, 'Content-Type': 'text/plain'
-      res.end err?.message ? 'Unknown error'
+    @project().then (project) =>
+      @html().then (html) ->
+        debug 'Serving html'
+        res.writeHead 200, 'Content-Type': 'text/html'
+        res.end html project: project
+      .catch (err) ->
+        res.writeHead 500, 'Content-Type': 'text/plain'
+        res.end err?.message ? 'Unknown error'
 
   server: ->
     @_server ?= Promise.resolve http.createServer(@_handle).listen @port
