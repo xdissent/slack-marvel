@@ -29,23 +29,37 @@ html(lang="en")
               a(href="#") Show All
 
     .container
+      .row
 
-      - for (var idx = 1; idx <= project.num_images; idx++)
-        - var image = project.images[idx.toString()]
+        - for (var idx = 1; idx <= project.num_images; idx++)
+          - var image = project.images[idx.toString()]
 
-        .panel.panel-default.prototype-screen(data-prototype-screen-id="#{image.id}")
-          .panel-heading
-            h2.panel-title.text-right
-              small #{image.directory}
-              |  #{image.name}
-          .panel-body
+          .prototype-screen.col-lg-2.col-md-3.col-sm-4.col-xs-12(data-prototype-screen-id="#{image.id}" data-prototype-screen-name="#{image.name}" data-prototype-screen-directory="#{image.directory}")
             a(href="#{image.url}" target="_blank")
-              img(src="#{image.preview_thumbnail}")
-          .panel-footer.text-muted ##{image.id}
+              img.img-thumbnail.img-responsive(src="#{image.preview_thumbnail}")
+
+          - if (idx % 3 === 0)
+            .clearfix.visible-sm-block
+
+          - if (idx % 4 === 0)
+            .clearfix.visible-md-block
+
+          - if (idx % 6 === 0)
+            .clearfix.visible-lg-block
 
     .footer
       .container
         p.text-muted Powered by Slack Marvel
+
+    
+    #prototype-screen-modal.modal.fade
+      .modal-dialog
+        .modal-content
+          .modal-body
+          .carousel-caption
+            h4.modal-title
+            p.directory
+
 
     script(src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js")
     script(src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js")

@@ -11,14 +11,48 @@ body
   width: 100%
   height: 60px
   background-color: #f5f5f5
-  
+
   .container .text-muted
     margin: 20px 0
 
-.container
-  width: auto
-  max-width: 680px
-  padding: 0 15px
-
-.panel-body
+.prototype-screen
+  margin-bottom: 30px
   text-align: center
+
+.modal
+  .modal-dialog
+    width: auto
+    max-width: 600px
+    .modal-content
+      .modal-body
+        padding: 0
+        overflow-y: auto
+        text-align: center
+        img
+          max-height: 100%
+          width: auto
+
+      .carousel-caption
+        opacity: 0
+        background-color: rgba(0, 0, 0, 0.8)
+        left: 0
+        right: 0
+        bottom: -2px
+        transition-delay: 0.2s
+        transition-duration: 0.15s
+        transition-property: opacity
+        transition-timing-function: linear
+
+      &:hover
+        .carousel-caption
+          opacity: 1
+
+.modal-dialog-center
+  margin: 0
+  position: absolute
+  top: 50%
+  left: 50%
+
+@media (max-width: 767px)
+  .modal-dialog-center
+    width: 100%
