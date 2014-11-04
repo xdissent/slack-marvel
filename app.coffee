@@ -50,7 +50,7 @@ class App
       imageIds = (img.id for img in images).join ','
       editUrl = "https://marvelapp.com/manage/project/#{project.id}/"
       links =
-        updated: "<#{@url}?screens=#{imageIds}|View Updated Screens>"
+        updated: "<#{@url}##{imageIds}|View Updated Screens>"
         all: "<#{@url}|View All Screens>"
         prototype: "<#{project.vanity_url}|View Prototype>"
         edit: "<#{editUrl}|Edit Prototype>"
@@ -58,7 +58,7 @@ class App
         token: @token
         channel: @channel
         text: text
-        username: 'Marvel'
+        username: @username
         attachments: JSON.stringify [
           fallback: ''
           color: '#28d87e'
@@ -84,7 +84,9 @@ class App
     image = data?.content?.object
     return unless image?.status is 5
     debug 'Notifying', image
-    @notify [image]
+    @notify([image]).then =>
+      debug 'Clearing cached project'
+      @_project = null
 
   html: ->
     @_html ?= @project().then (project) ->
